@@ -41,6 +41,22 @@ describe('renderTemplate', () => {
     const out = renderTemplate('{이름} {부스번호}', { 이름: '김하늘', 링크: '' });
     expect(out).toBe('김하늘 {부스번호}');
   });
+
+  it('이름에 $ 패턴이 있어도 그대로 넣는다', () => {
+    expect(renderTemplate('{이름}님', { 이름: '$&', 링크: '' })).toBe('$&님');
+    expect(renderTemplate('{이름}님', { 이름: "$'", 링크: '' })).toBe("$'님");
+    expect(renderTemplate('{이름}님', { 이름: '$$', 링크: '' })).toBe('$$님');
+  });
+
+  it('이름에 다른 변수 이름이 들어 있어도 다시 치환하지 않는다', () => {
+    expect(renderTemplate('{이름}', { 이름: '{링크}x', 링크: 'URL' })).toBe('{링크}x');
+  });
+
+  it('링크에 $ 패턴이 있어도 그대로 넣는다', () => {
+    expect(renderTemplate('{링크}', { 이름: '', 링크: 'https://a.b/?x=$&y' })).toBe(
+      'https://a.b/?x=$&y',
+    );
+  });
 });
 
 describe('smsByteLength', () => {

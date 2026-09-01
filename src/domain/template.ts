@@ -26,9 +26,7 @@ export function renderTemplate(
   body: string,
   vars: { 이름: string; 링크: string },
 ): string {
-  return body
-    .replaceAll('{이름}', vars.이름)
-    .replaceAll('{링크}', vars.링크);
+  return body.replace(/\{(이름|링크)\}/g, (_, key: '이름' | '링크') => vars[key]);
 }
 
 /**
