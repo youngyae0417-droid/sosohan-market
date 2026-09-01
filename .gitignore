@@ -1,0 +1,32 @@
+# 환경변수 · 비밀키 (솔라피 API 키, Supabase 키 등)
+.env
+.env.*
+!.env.example
+*.key
+*.pem
+secrets.json
+
+# 의존성
+node_modules/
+.pnp
+.pnp.js
+
+# 빌드 결과물
+.next/
+out/
+dist/
+build/
+
+# 셀러 개인정보가 담길 수 있는 파일 (네이버폼 엑셀 다운로드 등)
+*.xlsx
+*.xls
+*.csv
+셀러명단*
+확정셀러*
+
+# 로컬 도구
+.vercel
+.DS_Store
+Thumbs.db
+*.log
+.omc/
