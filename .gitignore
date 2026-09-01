@@ -16,8 +16,10 @@ node_modules/
 out/
 dist/
 build/
-next-env.d.ts
 *.tsbuildinfo
+# next-env.d.ts는 무시하지 않고 커밋한다. tsconfig.json의 include가 이 파일을
+# 이름으로 명시하므로, 무시하면 새로 클론한 곳에서 next 명령을 먼저 돌리기 전까지
+# `npm run typecheck`가 TS6053으로 실패한다.
 
 # 셀러 개인정보가 담길 수 있는 파일 (네이버폼 엑셀 다운로드 등)
 *.xlsx
