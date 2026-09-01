@@ -16,6 +16,8 @@ node_modules/
 out/
 dist/
 build/
+next-env.d.ts
+*.tsbuildinfo
 
 # 셀러 개인정보가 담길 수 있는 파일 (네이버폼 엑셀 다운로드 등)
 *.xlsx
