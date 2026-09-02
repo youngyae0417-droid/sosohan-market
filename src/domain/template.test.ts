@@ -18,7 +18,7 @@ describe('DEFAULT_TEMPLATES', () => {
 
   it('금지어를 쓰지 않는다', () => {
     for (const kind of NOTICE_KINDS) {
-      expect(DEFAULT_TEMPLATES[kind]).not.toMatch(/참가자|어드민/);
+      expect(DEFAULT_TEMPLATES[kind]).not.toMatch(/팀|참가자|어드민|마켓|행사/);
     }
   });
 });

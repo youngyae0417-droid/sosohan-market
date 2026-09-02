@@ -17,8 +17,10 @@ export function normalizePhone(raw: string): PhoneResult {
 
   let local = digits;
 
-  // 국가번호: +82 10..., 8210... → 010...
-  if (local.startsWith('82')) local = '0' + local.slice(2);
+  // 국가번호: +82 10... → 010..., +82 010... → 010...
+  // 국가번호 뒤에 국내 0이 남아 있는 표기도 흔하므로 둘 다 받는다.
+  if (local.startsWith('820')) local = local.slice(2);
+  else if (local.startsWith('82')) local = '0' + local.slice(2);
 
   // 엑셀이 전화번호를 숫자로 해석하면 앞자리 0이 사라진다: 1012345678 → 01012345678
   if (local.length === 10 && local.startsWith('10')) local = '0' + local;

@@ -28,6 +28,11 @@ describe('normalizePhone', () => {
     expect(normalizePhone('821012345678')).toEqual({ ok: true, phone: '01012345678' });
   });
 
+  it('국가번호 뒤에 국내 0이 남아 있어도 받는다', () => {
+    expect(normalizePhone('+82 010-1234-5678')).toEqual({ ok: true, phone: '01012345678' });
+    expect(normalizePhone('8201012345678')).toEqual({ ok: true, phone: '01012345678' });
+  });
+
   it('빈 문자열을 거부한다', () => {
     expect(normalizePhone('')).toEqual({ ok: false, reason: '빈값' });
     expect(normalizePhone('   ')).toEqual({ ok: false, reason: '빈값' });
