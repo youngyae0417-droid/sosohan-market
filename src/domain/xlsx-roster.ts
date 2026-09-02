@@ -22,18 +22,39 @@ function cellText(value: unknown): string {
   return String(value);
 }
 
-/** 머리글에서 이름 열을 가리키는 말. 공백을 지운 뒤 비교한다. */
-const NAME_HEADERS = ['이름', '성명', '성함', '셀러명', '대표자', '대표자명', '작가명', '브랜드명'];
+/** 머리글에서 이름 열을 가리키는 말. */
+const NAME_HEADERS = [
+  '이름', '성명', '성함', '셀러명', '대표자', '대표자명',
+  '작가명', '브랜드명', '상호명', '업체명', '닉네임', '활동명',
+];
 
 /** 머리글에서 연락처 열을 가리키는 말. */
-const PHONE_HEADERS = ['연락처', '전화번호', '휴대폰번호', '휴대폰', '핸드폰', '전화', '번호'];
+const PHONE_HEADERS = [
+  '연락처', '전화번호', '휴대폰번호', '휴대폰', '휴대전화', '휴대전화번호',
+  '핸드폰', '핸드폰번호', '전화', '번호',
+];
+
+/**
+ * 머리글을 비교 가능한 형태로 만든다.
+ * 네이버폼 문항 이름에는 부가 표기가 흔히 붙는다:
+ *   "연락처 (필수)", "휴대폰 번호('-' 없이)", "전화번호[선택]", "이름*"
+ * 괄호류와 그 안의 내용, 별표, 공백을 지운다.
+ */
+function normalizeHeader(raw: string): string {
+  return raw
+    .replace(/[(（[{].*?[)）\]}]/g, '')
+    .replace(/[(（[{].*$/g, '')
+    .replace(/[*＊]/g, '')
+    .replace(/\s/g, '')
+    .trim();
+}
 
 /**
  * 머리글 행에서 이름 열과 연락처 열의 위치를 찾는다.
  * 둘 중 하나라도 못 찾으면 null을 주고, 호출부는 기존 방식으로 되돌아간다.
  */
 function findColumns(header: string[]): { nameIndex: number; phoneIndex: number } | null {
-  const normalized = header.map(h => h.replace(/\s/g, ''));
+  const normalized = header.map(normalizeHeader);
   const nameIndex = normalized.findIndex(h => NAME_HEADERS.includes(h));
   const phoneIndex = normalized.findIndex(h => PHONE_HEADERS.includes(h));
   if (nameIndex === -1 || phoneIndex === -1) return null;
@@ -67,7 +88,32 @@ export async function parseXlsxRoster(buffer: ArrayBuffer): Promise<RosterResult
     const projected = cells
       .slice(1)
       .map(row => [row[columns.nameIndex] ?? '', row[columns.phoneIndex] ?? '']);
-    return parseRosterCells(projected);
+    const result = parseRosterCells(projected);
+    // 머리글 행을 떼어냈으므로 줄 번호가 담당자의 엑셀 행보다 1 작다. 되돌린다.
+    return {
+      rows: result.rows,
+      issues: result.issues.map(issue => ({ ...issue, line: issue.line + 1 })),
+    };
+  }
+
+  // 머리글로 열을 특정하지 못했는데 열이 셋 이상이면, "전화번호가 아닌 나머지를
+  // 모두 이름으로 합치는" 폴백이 셀러 이름을 통째로 망가뜨린다. 조용히 틀린
+  // 이름을 만들어 문자로 보내느니, 담당자에게 열 이름을 확인하라고 알린다.
+  const widest = cells.reduce(
+    (max, row) => Math.max(max, row.filter(c => c !== '').length),
+    0,
+  );
+  if (widest > 2) {
+    return {
+      rows: [],
+      issues: [
+        {
+          line: 1,
+          raw: cells[0]?.join('\t') ?? '',
+          reason: '이름 열과 연락처 열을 찾지 못했습니다. 엑셀 첫 줄의 열 이름을 확인해 주세요.',
+        },
+      ],
+    };
   }
 
   return parseRosterCells(cells);

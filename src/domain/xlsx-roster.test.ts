@@ -108,4 +108,47 @@ describe('parseXlsxRoster', () => {
     expect(result.issues).toHaveLength(1);
     expect(result.issues[0].reason).toBe('전화번호를 찾을 수 없음');
   });
+
+  it('머리글에 부가 표기가 붙어 있어도 열을 찾는다', async () => {
+    const buf = await makeXlsx([
+      ['제출시각', '이름 (필수)', "휴대폰 번호('-' 없이)", '판매 품목'],
+      ['2026-08-15 14:32', '김하늘', '010-1111-2222', '수공예 액세서리'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([{ name: '김하늘', phone: '01011112222' }]);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('대괄호와 별표가 붙은 머리글도 찾는다', async () => {
+    const buf = await makeXlsx([
+      ['성함*', '휴대전화[선택]'],
+      ['김하늘', '010-1111-2222'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([{ name: '김하늘', phone: '01011112222' }]);
+  });
+
+  it('열이 셋 이상인데 이름·연락처 열을 못 찾으면 조용히 넘어가지 않고 알린다', async () => {
+    const buf = await makeXlsx([
+      ['타임스탬프', '응답1', '응답2', '응답3'],
+      ['2026-08-15', '김하늘', '010-1111-2222', '수공예'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([]);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].reason).toContain('열 이름을 확인');
+  });
+
+  it('열을 골라낸 경우 줄 번호가 담당자의 엑셀 행과 맞는다', async () => {
+    const buf = await makeXlsx([
+      ['이름', '연락처'],
+      ['김하늘', '010-1111-2222'],
+      ['박서준', '번호없음'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([{ name: '김하늘', phone: '01011112222' }]);
+    expect(result.issues).toHaveLength(1);
+    // 박서준은 엑셀에서 3번째 줄이다 (머리글이 1번째).
+    expect(result.issues[0].line).toBe(3);
+  });
 });
