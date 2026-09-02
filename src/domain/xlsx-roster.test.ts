@@ -51,4 +51,61 @@ describe('parseXlsxRoster', () => {
     const result = await parseXlsxRoster(buf);
     expect(result).toEqual({ rows: [], issues: [] });
   });
+
+  it('네이버폼 형태의 다열 시트에서 이름과 연락처만 골라낸다', async () => {
+    const buf = await makeXlsx([
+      ['제출시각', '이름', '연락처', '판매 품목', 'SNS 계정'],
+      ['2026-08-15 14:32', '김하늘', '010-1111-2222', '수공예 액세서리', '@kimhaneul'],
+      ['2026-08-15 15:07', '박서준', '010-3333-4444', '드라이플라워', '@parkseojun'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([
+      { name: '김하늘', phone: '01011112222' },
+      { name: '박서준', phone: '01033334444' },
+    ]);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('머리글에 공백이 섞여 있어도 열을 찾는다', async () => {
+    const buf = await makeXlsx([
+      ['성명', '휴대폰 번호', '비고'],
+      ['김하늘', '010-1111-2222', '전기 필요'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([{ name: '김하늘', phone: '01011112222' }]);
+    expect(result.issues).toEqual([]);
+  });
+
+  it('머리글을 못 찾으면 기존 방식으로 되돌아간다', async () => {
+    const buf = await makeXlsx([
+      ['김하늘', '010-1111-2222'],
+      ['박서준', '010-3333-4444'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([
+      { name: '김하늘', phone: '01011112222' },
+      { name: '박서준', phone: '01033334444' },
+    ]);
+  });
+
+  it('이름 열만 있고 연락처 열이 없으면 기존 방식으로 되돌아간다', async () => {
+    const buf = await makeXlsx([
+      ['이름', '메모'],
+      ['김하늘', '010-1111-2222'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([{ name: '김하늘', phone: '01011112222' }]);
+  });
+
+  it('다열 시트에서 전화번호가 빠진 행을 보고한다', async () => {
+    const buf = await makeXlsx([
+      ['제출시각', '이름', '연락처', '판매 품목'],
+      ['2026-08-15 14:32', '김하늘', '010-1111-2222', '수공예'],
+      ['2026-08-15 15:07', '박서준', '', '드라이플라워'],
+    ]);
+    const result = await parseXlsxRoster(buf);
+    expect(result.rows).toEqual([{ name: '김하늘', phone: '01011112222' }]);
+    expect(result.issues).toHaveLength(1);
+    expect(result.issues[0].reason).toBe('전화번호를 찾을 수 없음');
+  });
 });
